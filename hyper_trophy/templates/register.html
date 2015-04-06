@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load bootstrap3 %}
+
+{% block body %}
+<div class="container tim-container" style="max-width:800px; padding-top:100px">
+    <div><h2> {{ title }} </h2></div>
+    <form action="{% url 'register' %}" method="post" class="form">
+        {% csrf_token %}
+        {% bootstrap_form form %}
+        {% buttons %}
+            <button type="submit" class="btn btn-primary">
+                {% bootstrap_icon "star" %} Submit
+            </button>
+        {% endbuttons %}
+    </form>
+    {% if sets %}
+    <div class="container tim-container">
+    <div class="inner">
+        <div class="col-sm-4">
+            <table>
+                <tr><th><h2>Sets</h2></th></tr>
+                {% for set in sets %}
+                <tr><td><h6>{{ set.name }}: {{ set.weights }}</h6></td></tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+    </div>
+    {% endif %}
+</div>
+<div class="space"></div>
+
+{% endblock %}

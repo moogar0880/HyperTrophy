@@ -1,0 +1,11 @@
+.main-search {
+    padding: 30px;
+    text-align: center;
+    display: inline-grid;
+    width: 70%;
+    margin: 0 auto;
+}
+
+#id_query, #id_search_type {
+    display: inline;
+}
