@@ -55,3 +55,9 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# PyCharm
+.idea
+
+# Local Database
+db.sqlite3
