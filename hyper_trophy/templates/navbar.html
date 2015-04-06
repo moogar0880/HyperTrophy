@@ -36,8 +36,12 @@
                     </ul>
                     {# User Login/Registration #}
                     <ul class="nav navbar-nav navbar-right">
+                        {% if not user.is_authenticated %}
                         <li><a href="{% url 'register' %}">Register</a></li>
-                        <li><button href="#" class="btn btn-round btn-default">Sign in</button></li>
+                        <li><a class="btn btn-round" role="button" href="{% url 'login' %}">Sign In</a></li>
+                        {% else %}
+                        <li><a class="btn btn-round" role="button" href="{% url 'logout' %}">Sign Out</a></li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>

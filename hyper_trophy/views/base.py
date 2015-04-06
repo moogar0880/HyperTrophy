@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.shortcuts import render
+from django.template import RequestContext
 from django.views.generic import View
 
 __all__ = ['HyperView']
@@ -19,17 +20,19 @@ class HyperView(View):
         """Generic get method"""
         if self.form_class is not None:
             self.form = self.form_class(request.POST, request.FILES)
-        return render(request, self.template, self.get_context())
+        return render(request, self.template, self.get_context(),
+                      context_instance=RequestContext(self.request))
 
     def post(self, request):
         """Generic post method"""
         self.request = request
-        if self.form_class is not None:
+        if self.form_class is not None and self.form is None:
             self.form = self.form_class(request.POST, request.FILES)
         return render(self.request, self.template,
                       self.get_context(
                           **self.get_post_data()
-                      ))
+                      ),
+                      context_instance=RequestContext(self.request))
 
     def get_context(self, **kwargs):
         """Return the context for the current view"""
