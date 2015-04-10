@@ -8,6 +8,7 @@ from django.db import models
 
 import names
 
+from .users import UserProfile
 from .workout import Workout
 
 __all__ = ['Trainer', 'ScheduleEntry', 'Template']
@@ -40,12 +41,36 @@ class Trainer(models.Model):
         return User.objects.get(id=self.user_id)
 
     @property
+    def user_profile(self):
+        return UserProfile.objects.get(user_id=self.user_id)
+
+    @property
     def workout_schedule(self):
         """Return the workout schedule that this Trainer manages"""
         return ScheduleEntry.objects.filter(trainer_id=self.id)
 
+    def _get_muscle_groups(self, template_str):
+        return [ex.replace('[', '').replace(']', '').split(':')
+                for ex in template_str.split(',')]
+
     def generate_workout(self):
-        pass
+        user_profile, template = self.user_profile, self.template
+        muscle_lists = self._get_muscle_groups(template.musclegroup_rotation)
+
+        if user_profile.last_workout is None:
+            muscle_groups = muscle_lists[0]
+        else:
+            # Just in case, default to the first muscle grouping
+            muscle_groups = muscle_lists[0]
+            for mg in muscle_lists:
+                if mg == user_profile.last_workout:
+                    muscle_groups = mg
+
+        exercises = [ex for ex in template.included_exercises
+                     if ex not in user_profile.ignored_exercises and
+                     ex.primary_muscle_group in muscle_groups]
+        in_order = sorted(exercises, key=lambda x: x.muscle_size)
+        return in_order
 
     def feedback(self):
         pass

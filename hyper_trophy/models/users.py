@@ -33,7 +33,9 @@ class UserProfile(BaseProfile):
     """
 
     #: Exercises that the user doesn't want to be given
-    ignored_exercises = models.ManyToManyField('Exercise',)
+    ignored_exercises = models.ManyToManyField('Exercise')
+
+    last_workout = models.ForeignKey('Workout', null=True, blank=True)
 
     @property
     def calendar(self):
