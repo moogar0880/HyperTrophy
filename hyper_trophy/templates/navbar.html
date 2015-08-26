@@ -21,18 +21,21 @@
                 <div class="navbar-collapse" id="bs-example-navbar-collapse-1">
                     <ul class="nav navbar-nav">
                         <li class="active"><a href="{% url 'home' %}">Home</a></li>
+                        {% if user.is_authenticated %}
+                        <li class="active"><a href="{% url 'workout' %}">Workout!</a></li>
                         <li class="active"><a href="#">Dashboard</a></li>
                         <li class="active"><a href="#">Calendar</a></li>
+                        {% endif %}
 
                         {# Search Form #}
-                        <li id="search" class="collapse">
-                            <form class="main-search navbar-form navbar-left navbar-search-form" action="/results/" method="post" role="search">
-                                {% csrf_token %}
-                                {{ form.query }}
-                                <input type="submit" value="Submit" />
-                            </form>
-                        </li>
-                        <li><a class="btn hidden-xs" data-toggle="collapse" data-target="#search"><i class="fa fa-search"></i></a></li>
+{#                        <li id="search" class="collapse">#}
+{#                            <form class="main-search navbar-form navbar-left navbar-search-form" action="/results/" method="post" role="search">#}
+{#                                {% csrf_token %}#}
+{#                                {{ form.query }}#}
+{#                                <input type="submit" value="Submit" />#}
+{#                            </form>#}
+{#                        </li>#}
+{#                        <li><a class="btn hidden-xs" data-toggle="collapse" data-target="#search"><i class="fa fa-search"></i></a></li>#}
                     </ul>
                     {# User Login/Registration #}
                     <ul class="nav navbar-nav navbar-right">

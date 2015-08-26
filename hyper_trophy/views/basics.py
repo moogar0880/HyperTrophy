@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
+from django.template import RequestContext
 
 from .base import HyperView
-from ..models import UserProfile
+from .utils import user_notconfigured
+from ..forms import ExperienceForm
+from ..models import UserProfile, Trainer
 
-__all__ = ['HomeView', 'RegistrationView', 'LoginView', 'LogoutView']
+__all__ = ['HomeView', 'RegistrationView', 'LoginView', 'LogoutView',
+           'WorkoutBackgroundView']
 
 
 class HomeView(HyperView):
@@ -26,11 +31,16 @@ class RegistrationView(HyperView):
 
     def post(self, request):
         """If we successfully created a user, attach a User Profile to it"""
-        sup = super(RegistrationView, self).post(request)
+        super(RegistrationView, self).post(request)
         if self.form.is_valid():
             user = self.form.save()
             UserProfile(user_id=user.id).save()
-        return sup
+            Trainer(user_id=user.id).save()
+            messages.success(self.request, 'Account Created Successfully!')
+            user_obj = authenticate(username=self.form['username'].value(),
+                                    password=self.form['password1'].value())
+            login(request, user_obj)
+        return redirect('/background/')
 
 
 class LoginView(HyperView):
@@ -58,6 +68,7 @@ class LoginView(HyperView):
 class LogoutView(HyperView):
     """View for handling logging out"""
 
+    @login_required
     def get(self, request):
         """Log out and redirect"""
         logout(request)
@@ -66,3 +77,23 @@ class LogoutView(HyperView):
         request.path = request.META['HTTP_REFERER']
         messages.success(request, 'Logged out successfully.')
         return redirect(request.path)
+
+
+class WorkoutBackgroundView(HyperView):
+    title = 'Background'
+    template = 'background.html'
+    form_class = ExperienceForm
+
+    @login_required
+    @user_notconfigured
+    def post(self, request):
+        self.form = self.form_class(request, request.POST)
+        if self.form.is_valid():
+            url = '/background/{}/'.format(self.form.setup_type.lower())
+            return redirect(url)
+        self.form.add_error(None, 'Sorry, something went wrong...')
+        return render(self.request, self.template,
+                      self.get_context(
+                          **self.get_post_data()
+                      ),
+                      context_instance=RequestContext(self.request))

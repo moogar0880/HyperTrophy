@@ -2,16 +2,29 @@
 """This module contains the database models which are used to store information
 needed for planning and scheduling workouts
 """
+import random
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.utils.functional import cached_property
 
 import names
 
 from .users import UserProfile
-from .workout import Workout
+from .workout import Workout, Set
 
 __all__ = ['Trainer', 'ScheduleEntry', 'Template']
+
+
+def get_five(collection):
+    """Get five random items from the provided collection"""
+    return [random.choice(collection) for _ in range(5)]
+
+
+def filter_exercises(included, excluded, valid_groups, mechanics_type='C'):
+    return [ex for ex in included if ex not in excluded and
+            ex.primary_muscle_group in valid_groups and
+            ex.mechanics_type == mechanics_type]
 
 
 class Trainer(models.Model):
@@ -31,46 +44,99 @@ class Trainer(models.Model):
     #: The workout template to use to generate workouts from
     template_id = models.IntegerField()
 
-    @property
+    @cached_property
     def template(self):
         return Template.objects.get(id=self.template_id)
 
-    @property
+    @cached_property
     def user(self):
         """Return the actual user object associated with this Trainer"""
         return User.objects.get(id=self.user_id)
 
-    @property
+    @cached_property
     def user_profile(self):
         return UserProfile.objects.get(user_id=self.user_id)
 
-    @property
+    @cached_property
     def workout_schedule(self):
         """Return the workout schedule that this Trainer manages"""
         return ScheduleEntry.objects.filter(trainer_id=self.id)
 
-    def _get_muscle_groups(self, template_str):
+    @staticmethod
+    def _get_muscle_rotation(template_str):
+        """Given the workout templates' string, parse it and return the muscle
+        group keys required for database lookups
+        """
         return [ex.replace('[', '').replace(']', '').split(':')
                 for ex in template_str.split(',')]
 
-    def generate_workout(self):
-        user_profile, template = self.user_profile, self.template
-        muscle_lists = self._get_muscle_groups(template.musclegroup_rotation)
+    def _get_muscle_groups(self, template, user_profile):
+        """Given a workout template and user profile, deduce the next target
+        muscle group for the provided user. Will default to the first muscle
+        group in the rotation, if the user has never tracked a workout before
 
-        if user_profile.last_workout is None:
-            muscle_groups = muscle_lists[0]
-        else:
-            # Just in case, default to the first muscle grouping
-            muscle_groups = muscle_lists[0]
+        :param template: The workout template to etract a muscle group rotation
+            from
+        :param user_profile: The UserProfile of the user looking to generate a
+            workout
+        :return: The list of muscle groups to use to generate a workout for
+        """
+        muscle_lists = self._get_muscle_rotation(template.musclegroup_rotation)
+
+        # Default to the first muscle group
+        muscle_groups = muscle_lists[0]
+        if user_profile.last_workout is not None:
             for mg in muscle_lists:
                 if mg == user_profile.last_workout:
                     muscle_groups = mg
+        return muscle_groups
 
-        exercises = [ex for ex in template.included_exercises
-                     if ex not in user_profile.ignored_exercises and
-                     ex.primary_muscle_group in muscle_groups]
-        in_order = sorted(exercises, key=lambda x: x.muscle_size)
-        return in_order
+    @staticmethod
+    def _generate_sets(exercises, reps=6, repeat=3):
+        """Given a collection of *exercises*, generate *repeat* number of sets
+        per exercise in *exercises*, each with *reps* number of reps
+
+        :param exercises: An iterable of Exercise models instances to generate
+            a group of sets for
+        :param reps: The number of reps per set
+        :param repeat: The number of times to perform the same exercise in a
+            single set
+        """
+        sets = []
+        for exercise in exercises:
+            for count in range(repeat):
+                sets.append(
+                    Set(exercise, reps)
+                )
+        return sets
+
+    def generate_workout(self):
+        """Based off of the current workout template and the users' profile
+        data, generate a workout for the next target muscle group, or groups,
+        as dictated by the workout template.
+        """
+        # Cache our data so we don't have to make unessecary database calls
+        user_profile, template = self.user_profile, self.template
+        whitelist = template.included_exercises.all()
+        blacklist = user_profile.ignored_exercises.all()
+        muscle_groups = self._get_muscle_groups(template, user_profile)
+
+        compounds = filter_exercises(
+            included=whitelist,
+            excluded=blacklist,
+            valid_groups=muscle_groups
+        )
+        isolations = filter_exercises(
+            included=whitelist,
+            excluded=blacklist,
+            valid_groups=muscle_groups,
+            mechanics_type='I'
+        )
+
+        exercises = get_five(compounds) + get_five(isolations)
+        sets = self._generate_sets(exercises)
+
+        return Workout(sets=sets, target=muscle_groups[0])
 
     def feedback(self):
         pass
@@ -107,11 +173,11 @@ class ScheduleEntry(models.Model):
     #: The id of the scheduled workout
     workout_id = models.IntegerField()
 
-    @property
+    @cached_property
     def trainer(self):
         return Trainer.objects.get(id=self.trainer_id)
 
-    @property
+    @cached_property
     def workout(self):
         return Workout.objects.get(id=self.workout_id)
 

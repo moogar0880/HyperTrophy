@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load bootstrap3 %}
+
+{% block body %}
+<div class="container tim-container" style="max-width:800px; padding-top:100px">
+    <div><h2> {{ title }} </h2></div>
+    <form action="{% url 'background' %}" method="post" class="form">
+        {% csrf_token %}
+        {% bootstrap_form form %}
+        {% buttons %}
+            <button type="submit" class="btn btn-primary">
+                {% bootstrap_icon "star" %} Continue
+            </button>
+        {% endbuttons %}
+    </form>
+</div>
+<div class="space"></div>
+
+{% endblock %}

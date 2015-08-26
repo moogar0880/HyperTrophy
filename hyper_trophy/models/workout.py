@@ -6,7 +6,8 @@ from django.db import models
 
 from picklefield.fields import PickledObjectField
 
-__all__ = ['EXCERCISE_CATEGORIES', 'MUSCLE_GROUPS', 'Exercise', 'Set',
+__all__ = ['EXCERCISE_CATEGORIES', 'MUSCLE_GROUPS', 'EXERCISE_MECHANICS',
+           'DIFFICULTY_LEVELS', 'FORCES', 'EXERCISE_TYPES', 'Exercise', 'Set',
            'Workout']
 
 EXCERCISE_CATEGORIES = (('R', 'Resistance'),
@@ -155,14 +156,17 @@ class Set:
     particular exercise
     """
 
-    def __init__(self, exercise, reps):
+    def __init__(self, exercise, reps, weight=None):
         """Create a new :class:`Set` instance.
 
         :param exercise: The exercise to be performed during this set
         :param reps: How many reps
+        :param weight: The weight at which to perform *reps* of *exercise*.
+            Defaults to :const:`None` for body weight or cardio exercises
         """
         self.exercise = exercise
         self.reps = reps
+        self.weight = weight
 
     def feedback(self, feedback):
         pass

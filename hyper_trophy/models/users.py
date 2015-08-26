@@ -5,6 +5,7 @@ and trainers.
 """
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils.functional import cached_property
 
 __all__ = ['UserProfile', 'TrainerProfile']
 
@@ -15,13 +16,29 @@ class BaseProfile(models.Model):
     #: The id of the user that this Profile maps to
     user_id = models.IntegerField(null=True, blank=True)
 
-    @property
+    #: Has this user's account been created yet?
+    is_configured = models.BooleanField(default=False)
+
+    @cached_property
     def user(self):
         """Return the actual user object associated with this user's profile"""
         return User.objects.get(id=self.user_id)
 
+    @cached_property
+    def trainer(self):
+        from .trainer import Trainer
+        return Trainer.objects.get(user_id=self.user_id)
+
     def get_dashboard(self):
         pass
+
+    def delete(self, using=None):
+        """Custom delete method that also cleans up the associated user and
+        trainer models
+        """
+        self.user.delete()
+        self.trainer.delete()
+        super(BaseProfile, self).delete(using=using)
 
     class Meta:
         abstract = True  # Don't actually create a db table for this model
@@ -37,7 +54,7 @@ class UserProfile(BaseProfile):
 
     last_workout = models.ForeignKey('Workout', null=True, blank=True)
 
-    @property
+    @cached_property
     def calendar(self):
         return None
 
