@@ -1,0 +1,27 @@
+---
+
+# Application settings.
+virtualenv_path: "/home/{{ application_name }}/app/{{ application_name }}"
+project_path: "{{ virtualenv_path }}/{{ project_name }}"
+application_path: "{{ project_path }}/{{ application_name }}"
+application_log_dir: "{{ virtualenv_path }}/logs"
+application_log_file: "{{ application_log_dir }}/gunicorn_supervisor.log"
+requirements_file: "{{ project_path }}/requirements.txt"
+
+# PLA settings
+django_apps:
+  - django.contrib.admin
+  - django.contrib.auth
+  - django.contrib.contenttypes
+  - django.contrib.sessions
+  - django.contrib.messages
+  - django.contrib.staticfiles
+  - django.contrib.webdesign
+
+third_party_apps:
+  - static_precompiler
+  - debug_toolbar
+
+pla_apps:
+  - api
+  - ui

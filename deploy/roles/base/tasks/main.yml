@@ -1,0 +1,30 @@
+---
+
+- name: Ensure OpenSSl and libssl are the latest versions
+  apt: name={{ item }} update_cache={{ update_apt_cache }} state=latest
+  with_items:
+    - openssl
+    - libssl-dev
+    - libssl-doc
+  tags: packages
+
+# Create a 2048-bit SSH key for pla user
+- name: Create SSH key for Github access
+  user: name={{ user }} generate_ssh_key=yes ssh_key_bits=2048
+
+- name: Install base packages
+  apt: name={{ item }} update_cache={{ update_apt_cache }} force=yes state=installed
+  with_items:
+    - build-essential
+    - ntp
+    - htop
+    - git
+    - python-dev
+    - python-pycurl
+    - supervisor
+    - python3-pip
+  tags: packages
+
+- name: Install virtualenv
+  pip: name=virtualenv executable=pip3
+  tags: packages

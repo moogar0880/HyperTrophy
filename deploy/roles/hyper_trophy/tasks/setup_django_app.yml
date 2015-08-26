@@ -1,0 +1,25 @@
+---
+
+- name: Install packages required by the Django app inside virtualenv
+  pip: virtualenv={{ virtualenv_path }} executable={{ virtualenv_path }}/bin/pip3 requirements={{ requirements_file }}
+
+- name: Configure App Settings
+  template: src=app_settings.j2
+            dest={{ application_path }}/settings.py
+            backup=yes
+  tags: django
+
+- name: Run the Django syncdb command
+  django_manage: command=syncdb app_path={{ project_path }} virtualenv={{ virtualenv_path }}
+  when: run_django_syncdb
+  tags: django
+
+- name: Run Django Migrations
+  django_manage: command="makemigrations --api" app_path={{ project_path }} virtualenv={{ virtualenv_path }}
+  when: run_django_migration
+  tags: django
+
+- name: Run Django collectstatic
+  django_manage: command=collectstatic app_path={{ project_path }} virtualenv={{ virtualenv_path }}
+  when: run_django_collectstatic
+  tags: django

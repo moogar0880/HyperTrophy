@@ -1,0 +1,15 @@
+---
+
+- name: Copy the git ssh private key to the remote server
+  copy: content="{{ git_key }}" dest={{ virtualenv_path }}/{{ application_name }}.key
+
+- name: Set the Mutha-effin permissions on Git Key
+  file: path={{ virtualenv_path }}/{{ application_name }}.key state=touch mode="400"
+
+- name: Setup the Git repo
+  git:
+    repo: "{{ git_repo }}"
+    dest: "{{ project_path }}"
+    key_file: "{{ virtualenv_path }}/{{ application_name }}.key"
+    accept_hostkey: yes
+    version: "develop"
